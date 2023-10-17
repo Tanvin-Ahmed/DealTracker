@@ -45,6 +45,18 @@ export async function scrapeAmazonProduct(url: string) {
       $(".a-size-base.a-color-price")
     );
 
+    const reviewsCount = $(
+      "#averageCustomerReviews_feature_div #averageCustomerReviews .a-declarative .a-size-base.a-color-base"
+    )
+      .text()
+      .trim();
+
+    const stars = $(
+      "#averageCustomerReviews_feature_div #averageCustomerReviews #acrCustomerReviewText"
+    )
+      .text()
+      .trim();
+
     const outOfStock =
       $("#availability span").text().trim().toLowerCase() ===
       "currently unavailable";
@@ -72,7 +84,7 @@ export async function scrapeAmazonProduct(url: string) {
       priceHistory: [],
       discountRate: Number(discountRate),
       category: "category",
-      reviewsCount: 100,
+      reviewsCount: Number(reviewsCount) || 0,
       stars: 4.5,
       isOutOfStock: outOfStock,
       description,

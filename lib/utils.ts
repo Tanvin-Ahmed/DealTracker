@@ -116,3 +116,15 @@ export const formatNumber = (num: number = 0) => {
     maximumFractionDigits: 0,
   });
 };
+
+export const getRatingNumber = (rating: string) => {
+  const regex = /(\d+\.\d+)/;
+  const match = rating.match(regex);
+
+  if (match) {
+    const numberWithDecimal = match[0];
+    return numberWithDecimal;
+  } else {
+    return 0;
+  }
+};

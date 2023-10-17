@@ -31,7 +31,7 @@ export async function scrapeAmazonProduct(url: string) {
     // Extract the product title
     const title = $("#productTitle").text().trim();
     const currentPrice = extractPrice(
-      $(".a-price span.a-offscreen"),
+      $(".a-price.priceToPay span.a-offscreen"),
       $(".priceToPay span.a-price-whole"),
       $(".a.size.base.a-color-price"),
       $(".a-button-selected .a-color-base")

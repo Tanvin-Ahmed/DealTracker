@@ -118,13 +118,8 @@ export const formatNumber = (num: number = 0) => {
 };
 
 export const getRatingNumber = (rating: string) => {
-  const regex = /(\d+\.\d+)/;
-  const match = rating.match(regex);
+  const ratingText = rating.split(" ")[0];
+  const ratingNumber = ratingText.replace(/,/g, "");
 
-  if (match) {
-    const numberWithDecimal = match[0];
-    return numberWithDecimal;
-  } else {
-    return 0;
-  }
+  return parseFloat(ratingNumber);
 };

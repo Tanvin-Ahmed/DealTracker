@@ -1,32 +1,48 @@
 "use server";
-
-import axios from "axios";
 import * as cheerio from "cheerio";
-import { extractCurrency, extractDescription, extractPrice } from "../utils";
+import {
+  extractCurrency,
+  extractDescription,
+  extractPrice,
+  getRatingNumber,
+} from "../utils";
+import puppeteer from "puppeteer";
+import { Browser } from "puppeteer";
 
 export async function scrapeAmazonProduct(url: string) {
   if (!url) return;
 
   // BrightData proxy configuration
-  const username = String(process.env.BRIGHT_DATA_USERNAME);
-  const password = String(process.env.BRIGHT_DATA_PASSWORD);
-  const port = 22225;
-  const session_id = (1000000 * Math.random()) | 0;
+  // const username = String(process.env.BRIGHT_DATA_USERNAME);
+  // const password = String(process.env.BRIGHT_DATA_PASSWORD);
+  // const port = 22225;
+  // const session_id = (1000000 * Math.random()) | 0;
 
-  const options = {
-    auth: {
-      username: `${username}-session-${session_id}`,
-      password,
-    },
-    host: "brd.superproxy.io",
-    port,
-    rejectUnauthorized: false,
-  };
+  // const options = {
+  //   auth: {
+  //     username: `${username}-session-${session_id}`,
+  //     password,
+  //   },
+  //   host: "brd.superproxy.io",
+  //   port,
+  //   rejectUnauthorized: false,
+  // };
 
   try {
     // Fetch the product page
-    const response = await axios.get(url, options);
-    const $ = cheerio.load(response.data);
+    // const response = await axios.get(url, options);
+    const browser: Browser = await puppeteer.launch({ headless: "new" });
+    const page = await browser.newPage();
+    // Websites can check the User-Agent header to identify the browser. Set your User-Agent to mimic a real browser
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+    );
+    await page.waitForTimeout(2000);
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+    const content = await page.content();
+    await browser.close();
+
+    const $ = cheerio.load(content);
 
     // Extract the product title
     const title = $("#productTitle").text().trim();
@@ -45,14 +61,21 @@ export async function scrapeAmazonProduct(url: string) {
       $(".a-size-base.a-color-price")
     );
 
-    const reviewsCount = $(
+    const reviews = $(
+      "#averageCustomerReviews_feature_div #averageCustomerReviews #acrCustomerReviewText"
+    )
+      .text()
+      .trim();
+    const reviewsCount = getRatingNumber(reviews);
+
+    const stars = $(
       "#averageCustomerReviews_feature_div #averageCustomerReviews .a-declarative .a-size-base.a-color-base"
     )
       .text()
       .trim();
 
-    const stars = $(
-      "#averageCustomerReviews_feature_div #averageCustomerReviews #acrCustomerReviewText"
+    const category = $(
+      "#wayfinding-breadcrumbs_container #wayfinding-breadcrumbs_feature_div li:first .a-link-normal.a-color-tertiary"
     )
       .text()
       .trim();
@@ -83,9 +106,9 @@ export async function scrapeAmazonProduct(url: string) {
       originalPrice: Number(originalPrice) || Number(currentPrice),
       priceHistory: [],
       discountRate: Number(discountRate),
-      category: "category",
-      reviewsCount: Number(reviewsCount) || 0,
-      stars: 4.5,
+      category,
+      reviewsCount: reviewsCount || 0,
+      stars: Number(stars),
       isOutOfStock: outOfStock,
       description,
       lowestPrice: Number(currentPrice) || Number(originalPrice),

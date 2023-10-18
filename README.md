@@ -1,6 +1,6 @@
 # Deal Tracker
 
-[Visit my application](https://deal-tracker-6dlc5h9u4-tanvin-ahmed.vercel.app/)
+[Visit my application](https://deal-tracker-delta.vercel.app/)
 
 ## Features
 

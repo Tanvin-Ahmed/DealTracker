@@ -14,5 +14,6 @@
 - TypeScript
 - Mongoose
 - MongoDB
-- Web Scraping
+- puppeteer(Web Scraper)
+- cheerio
 - Nodemailer

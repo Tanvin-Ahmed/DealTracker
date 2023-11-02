@@ -169,7 +169,7 @@ const ProductDetails = async ({ params: { id } }: Props) => {
           </div>
         </div>
         <Link
-          href="/"
+          href={product.url}
           className="text-base text-white btn w-fit mx-auto flex items-center justify-center gap-3 min-w-[200px]"
         >
           <Image

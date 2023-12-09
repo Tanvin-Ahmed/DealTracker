@@ -2,8 +2,7 @@ import Navbar from "@/components/common/Navbar";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
-import { ClerkProvider, auth } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
+import { ClerkProvider } from "@clerk/nextjs";
 import ToastProvider from "@/components/providers/ToastProvider";
 
 // const inter = Inter({ subsets: ["latin"] });
@@ -23,12 +22,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { userId } = auth();
-
-  if (!userId) {
-    redirect("/sign-in");
-  }
-
   return (
     <html lang="en">
       <body className={spaceGrotesk.className}>

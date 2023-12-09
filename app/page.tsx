@@ -6,6 +6,7 @@ import {
   getAllTrackedProducts,
   getTotalProductCount,
   getTotalTrackedProductCount,
+  saveNewUser,
 } from "@/lib/actions";
 import { Product } from "@/types";
 import { currentUser } from "@clerk/nextjs";
@@ -18,6 +19,8 @@ const Home = async () => {
   const email = user?.emailAddresses[0].emailAddress;
 
   if (!email) redirect("/sign-in");
+
+  await saveNewUser({ email });
 
   let allProducts = await getAllProducts(4, 0);
   allProducts = JSON.parse(JSON.stringify(allProducts));

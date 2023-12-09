@@ -1,9 +1,16 @@
 import HeroCarousel from "@/components/HeroCarousel";
 import ProductCard from "@/components/ProductCard";
 import SearchBar from "@/components/SearchBar";
-import { getAllProducts, getAllTrackedProducts } from "@/lib/actions";
+import {
+  getAllProducts,
+  getAllTrackedProducts,
+  getTotalProductCount,
+  getTotalTrackedProductCount,
+} from "@/lib/actions";
+import { Product } from "@/types";
 import { currentUser } from "@clerk/nextjs";
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 const Home = async () => {
@@ -11,11 +18,14 @@ const Home = async () => {
   const email = user?.emailAddresses[0].emailAddress;
   if (!email) redirect("/sign-in");
 
-  let allProducts = await getAllProducts(email);
+  let allProducts = await getAllProducts(4, 0);
   allProducts = JSON.parse(JSON.stringify(allProducts));
 
-  let allTackedProducts = await getAllTrackedProducts(email);
+  let allTackedProducts = await getAllTrackedProducts(4, 0);
   allTackedProducts = JSON.parse(JSON.stringify(allTackedProducts));
+
+  const untrackedProductCount = await getTotalProductCount();
+  const trackedProductCount = await getTotalTrackedProductCount();
 
   return (
     <>
@@ -60,7 +70,7 @@ const Home = async () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {allTackedProducts?.map((product) => (
+            {allTackedProducts?.map((product: Product) => (
               <ProductCard
                 key={product._id}
                 product={JSON.parse(JSON.stringify(product))}
@@ -68,9 +78,16 @@ const Home = async () => {
             ))}
           </div>
         )}
+        {trackedProductCount && trackedProductCount > 4 ? (
+          <div className="flex justify-center items-center">
+            <Link href={"/tracked-product-list"} className="searchbar-btn">
+              More
+            </Link>
+          </div>
+        ) : null}
       </section>
       <section className="trending-section">
-        <h2 className="section-text">Searched Products</h2>
+        <h2 className="section-text">Untracked Products</h2>
 
         {allProducts?.length === 0 ? (
           <div className="flex justify-center items-center">
@@ -84,7 +101,7 @@ const Home = async () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {allProducts?.map((product) => (
+            {allProducts?.map((product: Product) => (
               <ProductCard
                 key={product._id}
                 product={JSON.parse(JSON.stringify(product))}
@@ -92,6 +109,13 @@ const Home = async () => {
             ))}
           </div>
         )}
+        {untrackedProductCount && untrackedProductCount > 4 ? (
+          <div className="flex justify-center items-center">
+            <Link href={"/untracked-product-list"} className="searchbar-btn">
+              More
+            </Link>
+          </div>
+        ) : null}
       </section>
     </>
   );

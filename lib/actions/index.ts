@@ -5,7 +5,6 @@ import UserModel from "../models/user.model";
 import { connectToDB } from "../mongoose";
 import { scrapeAmazonProduct } from "../scraper";
 import { getAveragePrice, getHighestPrice, getLowestPrice } from "../utils";
-import { User } from "@/types";
 import { generateEmailBody, sendEmail } from "../nodeMailer";
 import { currentUser } from "@clerk/nextjs";
 
@@ -30,7 +29,7 @@ export const getUserByEmail = async (email: string | undefined) => {
   try {
     await connectToDB();
     const user = await UserModel.findOne({ email });
-    return user;
+    return JSON.parse(JSON.stringify(user));
   } catch (error) {
     // console.log(error);
   }
@@ -41,9 +40,10 @@ export const getAuthenticUser = async () => {
   const email = user?.emailAddresses[0].emailAddress;
   if (!email) return null;
 
-  await connectToDB()
+  await connectToDB();
 
-  return await UserModel.findOne({email});
+  const userInfo = await UserModel.findOne({ email });
+  return JSON.parse(JSON.stringify(userInfo));
 };
 
 // tracking api
@@ -172,7 +172,7 @@ export const scrapeAndStoreProduct = async (productUrl: string) => {
 
     revalidatePath(`/products/${newProduct._id}`);
 
-    return { productId: newProduct._id };
+    return { productId: JSON.parse(JSON.stringify(newProduct._id)) };
   } catch (error: any) {
     throw new Error("Fail to create/update product: " + error.message);
   }
@@ -185,35 +185,65 @@ export const getProductById = async (productId: string) => {
     const product = await Product.findById(productId);
 
     if (!product) return null;
-    return product;
+    return JSON.parse(JSON.stringify(product));
   } catch (error: any) {
     console.log("Get product failed: " + error.message);
   }
 };
 
-export const getAllProducts = async (email: string) => {
+export const getTotalProductCount = async () => {
   try {
     await connectToDB();
-    const user: User | null = await UserModel.findOne({ email });
-    const products = await Product.find({ user: user?._id, track: false }).sort(
-      { _id: -1 }
-    );
+    const user = await getAuthenticUser();
+    const counts = await Product.count({ user: user?._id, track: false });
+    return counts;
+  } catch (error: any) {
+    console.log("Get total product count failed: " + error.message);
+  }
+};
 
-    return products;
+export const getAllProducts = async (limit: number, page: number) => {
+  try {
+    await connectToDB();
+    const user = await getAuthenticUser();
+
+    const offset = limit * page;
+
+    const products = await Product.find({ user: user?._id, track: false })
+      .limit(limit)
+      .skip(offset)
+      .sort({ _id: -1 });
+
+    return JSON.parse(JSON.stringify(products));
   } catch (error: any) {
     console.log("Get all products failed: " + error.message);
   }
 };
 
-export const getAllTrackedProducts = async (email: string) => {
+export const getTotalTrackedProductCount = async () => {
   try {
     await connectToDB();
-    const user: User | null = await UserModel.findOne({ email });
-    const products = await Product.find({ user: user?._id, track: true }).sort({
-      _id: -1,
-    });
+    const user = await getAuthenticUser();
+    const counts = await Product.count({ user: user?._id, track: true });
+    return counts;
+  } catch (error: any) {
+    console.log("Get total product count failed: " + error.message);
+  }
+};
 
-    return products;
+export const getAllTrackedProducts = async (limit: number, page: number) => {
+  try {
+    await connectToDB();
+    const user = await getAuthenticUser();
+
+    const offset = limit * page;
+
+    const products = await Product.find({ user: user?._id, track: true })
+      .limit(limit)
+      .skip(offset)
+      .sort({ _id: -1 });
+
+    return JSON.parse(JSON.stringify(products));
   } catch (error: any) {
     console.log("Get all products failed: " + error.message);
   }
@@ -239,9 +269,9 @@ export const getSimilarProducts = async (
     const similarProducts = await Product.find({
       _id: { $ne: productId },
       user: user._id,
-    }).limit(3);
+    }).limit(4);
 
-    return similarProducts;
+    return JSON.parse(JSON.stringify(similarProducts));
   } catch (error: any) {
     console.log("Get all products failed: " + error.message);
   }

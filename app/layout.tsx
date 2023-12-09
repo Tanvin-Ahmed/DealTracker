@@ -2,9 +2,10 @@ import Navbar from "@/components/common/Navbar";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
-import { ClerkProvider, auth } from "@clerk/nextjs";
+import { ClerkProvider, auth, currentUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import ToastProvider from "@/components/providers/ToastProvider";
+import { saveNewUser } from "@/lib/actions";
 
 // const inter = Inter({ subsets: ["latin"] });
 const spaceGrotesk = Space_Grotesk({
@@ -18,18 +19,18 @@ export const metadata: Metadata = {
     "Track product prices effortlessly and save money on your online shopping.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const { userId } = auth();
-  // const user = await currentUser();
+  const user = await currentUser();
 
   if (!userId) {
     redirect("/sign-in");
   } else {
-    // await saveNewUser({ email: user?.emailAddresses[0].emailAddress });
+    await saveNewUser({ email: user?.emailAddresses[0].emailAddress });
   }
 
   return (

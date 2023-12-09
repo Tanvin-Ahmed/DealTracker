@@ -79,6 +79,7 @@ const TrackedProductListPage = () => {
               <ProductCard
                 key={product._id}
                 product={JSON.parse(JSON.stringify(product))}
+                updateProduct={setProducts}
               />
             ))}
           </div>

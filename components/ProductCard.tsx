@@ -5,14 +5,18 @@ import { Trash } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import { toast } from "react-hot-toast";
 
 interface ProductCardProps {
   product: Product;
+  updateProduct?: Dispatch<SetStateAction<[] | Product[]>>;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  updateProduct,
+}) => {
   const router = useRouter();
 
   const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -35,6 +39,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       toast.success("Product remove from the list successfully", {
         id: loadedToast,
       });
+      if (updateProduct) {
+        updateProduct((pre: Product[]) =>
+          pre.filter((p: Product) => p._id !== product._id)
+        );
+      }
     } catch (error: any) {
       console.log(error);
       toast.error("Something went wrong, please try again later!", {

@@ -192,7 +192,7 @@ const ProductDetails = async ({ params: { id } }: Props) => {
           <p className="section-text">Similar Products</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {similarProducts.map((product) => (
+            {similarProducts.map((product: Product) => (
               <ProductCard
                 key={product._id}
                 product={JSON.parse(JSON.stringify(product))}

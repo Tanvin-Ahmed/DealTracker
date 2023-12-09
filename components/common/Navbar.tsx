@@ -1,18 +1,11 @@
+import { UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 
 const navIcons = [
   {
-    src: "/assets/icons/search.svg",
-    alt: "search",
-  },
-  {
     src: "/assets/icons/black-heart.svg",
     alt: "heart",
-  },
-  {
-    src: "/assets/icons/user.svg",
-    alt: "user",
   },
 ];
 
@@ -33,15 +26,20 @@ const Navbar = () => {
         </Link>
         <div className="flex items-center gap-5">
           {navIcons.map((icon) => (
-            <Image
+            <div
               key={icon.alt}
-              src={icon.src}
-              alt={icon.alt}
-              width={28}
-              height={28}
-              className="object-contain"
-            />
+              className="rounded-full p-1 hover:bg-gray-100 transition-all cursor-pointer"
+            >
+              <Image
+                src={icon.src}
+                alt={icon.alt}
+                width={28}
+                height={28}
+                className="object-contain"
+              />
+            </div>
           ))}
+          <UserButton afterSignOutUrl="/" />
         </div>
       </nav>
     </header>

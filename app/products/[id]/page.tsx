@@ -1,9 +1,10 @@
-import Modal from "@/components/Modal";
 import PriceInfoCard from "@/components/PriceInfoCard";
 import ProductCard from "@/components/ProductCard";
+import TrackButton from "@/components/TrackButton";
 import { getProductById, getSimilarProducts } from "@/lib/actions";
 import { formatNumber } from "@/lib/utils";
 import { Product } from "@/types";
+import { currentUser } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -13,11 +14,16 @@ type Props = {
 };
 
 const ProductDetails = async ({ params: { id } }: Props) => {
-  const product: Product = await getProductById(id);
+  const user = await currentUser();
+  const email = user?.emailAddresses[0].emailAddress;
+  if (!email) redirect("/sign-in");
+
+  let product: Product = await getProductById(id);
+  product = JSON.parse(JSON.stringify(product));
 
   if (!product) redirect("/");
 
-  const similarProducts = await getSimilarProducts(id);
+  const similarProducts = await getSimilarProducts(id, email);
 
   return (
     <div className={"product-container"}>
@@ -27,7 +33,7 @@ const ProductDetails = async ({ params: { id } }: Props) => {
             src={product.image}
             alt={product.title}
             height={400}
-            width={580}
+            width={380}
             className="mx-auto"
           />
         </div>
@@ -154,7 +160,7 @@ const ProductDetails = async ({ params: { id } }: Props) => {
               />
             </div>
           </div>
-          <Modal productId={id} />
+          <TrackButton product={product} />
         </div>
       </div>
       <div className="flex flex-col gap-16">
@@ -185,9 +191,12 @@ const ProductDetails = async ({ params: { id } }: Props) => {
         <div className="py-14 flex flex-col gap-2 w-full">
           <p className="section-text">Similar Products</p>
 
-          <div className="flex flex-wrap gap-10 mt-7 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {similarProducts.map((product) => (
-              <ProductCard key={product._id} product={product} />
+              <ProductCard
+                key={product._id}
+                product={JSON.parse(JSON.stringify(product))}
+              />
             ))}
           </div>
         </div>

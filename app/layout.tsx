@@ -2,6 +2,9 @@ import Navbar from "@/components/common/Navbar";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
+import { ClerkProvider, auth } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
+import ToastProvider from "@/components/providers/ToastProvider";
 
 // const inter = Inter({ subsets: ["latin"] });
 const spaceGrotesk = Space_Grotesk({
@@ -20,13 +23,25 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { userId } = auth();
+  // const user = await currentUser();
+
+  if (!userId) {
+    redirect("/sign-in");
+  } else {
+    // await saveNewUser({ email: user?.emailAddresses[0].emailAddress });
+  }
+
   return (
     <html lang="en">
       <body className={spaceGrotesk.className}>
-        <main className="max-w-10xl mx-auto">
-          <Navbar />
-          {children}
-        </main>
+        <ClerkProvider>
+          <main className="max-w-10xl mx-auto">
+            <ToastProvider />
+            <Navbar />
+            {children}
+          </main>
+        </ClerkProvider>
       </body>
     </html>
   );

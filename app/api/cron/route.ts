@@ -4,12 +4,14 @@ import {
   getLowestPrice,
   getHighestPrice,
   getAveragePrice,
-  getEmailNotifType,
+  getEmailNotifyType,
 } from "@/lib/utils";
 import { connectToDB } from "@/lib/mongoose";
 import Product from "@/lib/models/product.model";
+import UserModel from "@/lib/models/user.model";
 import { scrapeAmazonProduct } from "@/lib/scraper";
 import { generateEmailBody, sendEmail } from "@/lib/nodeMailer";
+import { User } from "@/types";
 
 // export const maxDuration = 300; // This function can run for a maximum of 300 seconds
 export const dynamic = "force-dynamic";
@@ -19,7 +21,7 @@ export async function GET(request: Request) {
   try {
     connectToDB();
 
-    const products = await Product.find({});
+    const products = await Product.find({ track: true });
 
     if (!products) throw new Error("No product fetched");
 
@@ -55,12 +57,12 @@ export async function GET(request: Request) {
         );
 
         // ======================== 2 CHECK EACH PRODUCT'S STATUS & SEND EMAIL ACCORDINGLY
-        const emailNotifType = getEmailNotifType(
+        const emailNotifyType = getEmailNotifyType(
           scrapedProduct,
           currentProduct
         );
 
-        if (emailNotifType && updatedProduct.users.length > 0) {
+        if (emailNotifyType && updatedProduct.user) {
           const productInfo = {
             title: updatedProduct.title,
             url: updatedProduct.url,
@@ -69,14 +71,16 @@ export async function GET(request: Request) {
           // Construct emailContent
           const emailContent = await generateEmailBody(
             productInfo,
-            emailNotifType
+            emailNotifyType
           );
           // Get array of user emails
-          const userEmails = updatedProduct.users.map(
-            (user: any) => user.email
+          const user: User | null = await UserModel.findById(
+            updatedProduct.user
           );
           // Send email notification
-          await sendEmail(emailContent, userEmails);
+          if (user) {
+            await sendEmail(emailContent, [user?.email]);
+          }
         }
 
         return updatedProduct;

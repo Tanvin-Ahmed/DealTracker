@@ -1,17 +1,147 @@
 "use server";
-
 import { revalidatePath } from "next/cache";
 import Product from "../models/product.model";
+import UserModel from "../models/user.model";
 import { connectToDB } from "../mongoose";
 import { scrapeAmazonProduct } from "../scraper";
 import { getAveragePrice, getHighestPrice, getLowestPrice } from "../utils";
 import { User } from "@/types";
 import { generateEmailBody, sendEmail } from "../nodeMailer";
+import { currentUser } from "@clerk/nextjs";
+
+// auth apis
+export const saveNewUser = async (userInfo: { email: string | undefined }) => {
+  if (!userInfo) return;
+  try {
+    await connectToDB();
+    const existingUser = await UserModel.findOne({
+      email: userInfo.email,
+    });
+    if (existingUser) return;
+
+    await UserModel.create(userInfo);
+  } catch (error) {
+    // console.log(error);
+  }
+};
+
+export const getUserByEmail = async (email: string | undefined) => {
+  if (!email) return;
+  try {
+    await connectToDB();
+    const user = await UserModel.findOne({ email });
+    return user;
+  } catch (error) {
+    // console.log(error);
+  }
+};
+
+export const getAuthenticUser = async () => {
+  const user = await currentUser();
+  const email = user?.emailAddresses[0].emailAddress;
+  if (!email) return null;
+
+  await connectToDB()
+
+  return await UserModel.findOne({email});
+};
+
+// tracking api
+export const toggleTrackingProduct = async (
+  productId: string | undefined,
+  trackingStatus: boolean
+) => {
+  if (!productId) return;
+
+  try {
+    await connectToDB();
+    const user = await currentUser();
+    const email = user?.emailAddresses[0].emailAddress;
+
+    if (!email) {
+      return {
+        message: "Please login first",
+        error: true,
+        success: false,
+      };
+    }
+
+    const userInfo = await UserModel.findOne({ email });
+
+    if (!userInfo) {
+      return {
+        message: "Please login first",
+        error: true,
+        success: false,
+      };
+    }
+
+    const product = await Product.findOne({
+      _id: productId,
+      user: userInfo._id,
+    });
+
+    if (!product) {
+      return {
+        message: "Product not found",
+        error: true,
+        success: false,
+      };
+    }
+    product.track = trackingStatus;
+    await product.save();
+
+    let emailContent;
+    if (trackingStatus === true) {
+      emailContent = await generateEmailBody(product, "WELCOME");
+    } else {
+      emailContent = await generateEmailBody(product, "UNTRACK");
+    }
+    await sendEmail(emailContent, [email]);
+
+    revalidatePath("/");
+
+    return {
+      message: "Successfully added to tracking list",
+      success: true,
+      error: false,
+      track: trackingStatus,
+    };
+  } catch (error: any) {
+    const message = error?.response?.data?.message || error.message;
+    return {
+      message,
+      success: false,
+      error: true,
+    };
+  }
+};
 
 export const scrapeAndStoreProduct = async (productUrl: string) => {
   if (!productUrl) return;
   try {
     await connectToDB();
+    // get user information form clerk
+    const user = await currentUser();
+
+    if (!user?.emailAddresses[0].emailAddress)
+      return {
+        message: "Product not found",
+        error: true,
+        success: false,
+      };
+
+    const userInfo = await UserModel.findOne({
+      email: user?.emailAddresses[0].emailAddress,
+    });
+
+    if (!userInfo)
+      return {
+        message: "Please complete your registration first",
+        error: true,
+        success: false,
+      };
+
     const scrapedProduct = await scrapeAmazonProduct(productUrl);
 
     if (!scrapedProduct) return;
@@ -35,12 +165,14 @@ export const scrapeAndStoreProduct = async (productUrl: string) => {
     }
 
     const newProduct = await Product.findOneAndUpdate(
-      { url: scrapedProduct.url },
-      product,
+      { url: scrapedProduct.url, user: userInfo._id },
+      { ...product, user: userInfo._id },
       { upsert: true, new: true }
     );
 
     revalidatePath(`/products/${newProduct._id}`);
+
+    return { productId: newProduct._id };
   } catch (error: any) {
     throw new Error("Fail to create/update product: " + error.message);
   }
@@ -59,11 +191,13 @@ export const getProductById = async (productId: string) => {
   }
 };
 
-export const getAllProducts = async () => {
+export const getAllProducts = async (email: string) => {
   try {
     await connectToDB();
-
-    const products = await Product.find();
+    const user: User | null = await UserModel.findOne({ email });
+    const products = await Product.find({ user: user?._id, track: false }).sort(
+      { _id: -1 }
+    );
 
     return products;
   } catch (error: any) {
@@ -71,16 +205,40 @@ export const getAllProducts = async () => {
   }
 };
 
-export const getSimilarProducts = async (productId: string) => {
+export const getAllTrackedProducts = async (email: string) => {
   try {
     await connectToDB();
+    const user: User | null = await UserModel.findOne({ email });
+    const products = await Product.find({ user: user?._id, track: true }).sort({
+      _id: -1,
+    });
 
-    const currentProduct = await Product.findById(productId);
+    return products;
+  } catch (error: any) {
+    console.log("Get all products failed: " + error.message);
+  }
+};
+
+export const getSimilarProducts = async (
+  productId: string,
+  userEmail: string
+) => {
+  try {
+    await connectToDB();
+    const user = await UserModel.findOne({ email: userEmail });
+
+    if (!user) return null;
+
+    const currentProduct = await Product.findOne({
+      _id: productId,
+      user: user._id,
+    });
 
     if (!currentProduct) return null;
 
     const similarProducts = await Product.find({
       _id: { $ne: productId },
+      user: user._id,
     }).limit(3);
 
     return similarProducts;
@@ -89,26 +247,16 @@ export const getSimilarProducts = async (productId: string) => {
   }
 };
 
-export const addUserEmailToProduct = async (
-  productId: string,
-  userEmail: string
+export const deleteProduct = async (
+  productId: string | undefined,
+  email: string | undefined
 ) => {
-  try {
-    const product = await Product.findById(productId);
+  if (!productId || !email) return;
+  await connectToDB();
 
-    if (!product) return null;
+  const userInfo = await UserModel.findOne({ email });
+  if (!userInfo) throw new Error("Login first to delete product");
 
-    const userExist = product.users.some(
-      (user: User) => user.email === userEmail
-    );
-
-    if (!userExist) {
-      product.users.push({ email: userEmail });
-      await product.save();
-
-      const emailContent = await generateEmailBody(product, "WELCOME");
-
-      await sendEmail(emailContent, [userEmail]);
-    }
-  } catch (error) {}
+  await Product.findByIdAndDelete(productId);
+  revalidatePath("/");
 };

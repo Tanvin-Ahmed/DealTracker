@@ -23,8 +23,18 @@ const productSchema = new mongoose.Schema(
     reviewsCount: { type: Number },
     stars: { type: Number },
     isOutOfStock: { type: Boolean, default: false },
-    users: [{ email: { type: String, required: true } }],
-    default: [],
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+    },
+    track: {
+      type: Boolean,
+      default: false,
+    },
+    favorite: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true, versionKey: false }
 );

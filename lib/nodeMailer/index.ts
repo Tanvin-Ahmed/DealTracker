@@ -8,6 +8,7 @@ const Notification = {
   CHANGE_OF_STOCK: "CHANGE_OF_STOCK",
   LOWEST_PRICE: "LOWEST_PRICE",
   THRESHOLD_MET: "THRESHOLD_MET",
+  UNTRACK: "UNTRACK",
 };
 
 export const generateEmailBody = async (
@@ -69,6 +70,20 @@ export const generateEmailBody = async (
         <div>
           <h4>Hey, ${product.title} is now available at a discount more than ${THRESHOLD_PERCENTAGE}%!</h4>
           <p>Grab it right away from <a href="${product.url}" target="_blank" rel="noopener noreferrer">here</a>.</p>
+        </div>
+      `;
+      break;
+
+    case Notification.UNTRACK:
+      subject = `Welcome again to Price Tracking for ${shortenedTitle}`;
+      body = `
+        <div>
+          <h2>Welcome to DealTracker 🚀</h2>
+          <p>You just request to untrack ${product.title}.</p>
+          <p>Here's an example of how you'll receive updates:</p>
+          <div style="border: 1px solid #ccc; padding: 10px; background-color: #f8f8f8;">
+            <img src=${product.image} alt="Product Image" style="max-width: 100%;" />
+          </div>
         </div>
       `;
       break;

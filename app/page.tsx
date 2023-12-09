@@ -1,11 +1,22 @@
 import HeroCarousel from "@/components/HeroCarousel";
 import ProductCard from "@/components/ProductCard";
 import SearchBar from "@/components/SearchBar";
-import { getAllProducts } from "@/lib/actions";
+import { getAllProducts, getAllTrackedProducts } from "@/lib/actions";
+import { currentUser } from "@clerk/nextjs";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 
 const Home = async () => {
-  const allProducts = await getAllProducts();
+  const user = await currentUser();
+  const email = user?.emailAddresses[0].emailAddress;
+  if (!email) redirect("/sign-in");
+
+  let allProducts = await getAllProducts(email);
+  allProducts = JSON.parse(JSON.stringify(allProducts));
+
+  let allTackedProducts = await getAllTrackedProducts(email);
+  allTackedProducts = JSON.parse(JSON.stringify(allTackedProducts));
+
   return (
     <>
       <section className="px-6 md:px-20 py-24">
@@ -35,13 +46,52 @@ const Home = async () => {
         </div>
       </section>
       <section className="trending-section">
-        <h2 className="section-text">Trending</h2>
+        <h2 className="section-text">Tracked Products</h2>
 
-        <div className="flex flex-wrap gap-x-8 gap-y-16">
-          {allProducts?.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))}
-        </div>
+        {allTackedProducts?.length === 0 ? (
+          <div className="flex justify-center items-center">
+            <Image
+              src={"/assets/images/product_404.jpeg"}
+              alt={"product not found"}
+              width={200}
+              height={200}
+              className="max-w-[200px] w-full"
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {allTackedProducts?.map((product) => (
+              <ProductCard
+                key={product._id}
+                product={JSON.parse(JSON.stringify(product))}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+      <section className="trending-section">
+        <h2 className="section-text">Searched Products</h2>
+
+        {allProducts?.length === 0 ? (
+          <div className="flex justify-center items-center">
+            <Image
+              src={"/assets/images/product_404.jpeg"}
+              alt={"product not found"}
+              width={200}
+              height={200}
+              className="max-w-[200px] w-full"
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {allProducts?.map((product) => (
+              <ProductCard
+                key={product._id}
+                product={JSON.parse(JSON.stringify(product))}
+              />
+            ))}
+          </div>
+        )}
       </section>
     </>
   );

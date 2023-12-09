@@ -3,7 +3,10 @@ export type PriceHistoryItem = {
 };
 
 export type User = {
+  _id: string;
   email: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type Product = {
@@ -24,14 +27,37 @@ export type Product = {
   reviewsCount: number;
   stars: number;
   isOutOfStock: Boolean;
-  users?: User[];
+  user: String;
+  track: boolean;
+  favorite: boolean;
+};
+
+export type ScrapedProduct = {
+  url: string;
+  currency: string;
+  image: string;
+  title: string;
+  currentPrice: number;
+  originalPrice: number;
+  priceHistory: { price: number }[];
+  discountRate: number;
+  category: string;
+  reviewsCount: number;
+  stars: number;
+  isOutOfStock: boolean;
+  description: string;
+  lowestPrice: number;
+  highestPrice: number;
+  averagePrice: number;
+  user?: string;
 };
 
 export type NotificationType =
   | "WELCOME"
   | "CHANGE_OF_STOCK"
   | "LOWEST_PRICE"
-  | "THRESHOLD_MET";
+  | "THRESHOLD_MET"
+  | "UNTRACK";
 
 export type EmailContent = {
   subject: string;

@@ -7,6 +7,7 @@ import { scrapeAmazonProduct } from "../scraper";
 import { getAveragePrice, getHighestPrice, getLowestPrice } from "../utils";
 import { generateEmailBody, sendEmail } from "../nodeMailer";
 import { currentUser } from "@clerk/nextjs";
+import mongoose from "mongoose";
 
 // auth apis
 export const saveNewUser = async (userInfo: { email: string | undefined }) => {
@@ -77,7 +78,7 @@ export const toggleTrackingProduct = async (
     }
 
     const product = await Product.findOne({
-      _id: productId,
+      _id: new mongoose.Types.ObjectId(productId),
       user: userInfo._id,
     });
 
@@ -166,7 +167,7 @@ export const scrapeAndStoreProduct = async (productUrl: string) => {
 
     const newProduct = await Product.findOneAndUpdate(
       { url: scrapedProduct.url, user: userInfo._id },
-      { ...product, user: userInfo._id },
+      { ...product, user: new mongoose.Types.ObjectId(userInfo._id) },
       { upsert: true, new: true }
     );
 
@@ -195,7 +196,12 @@ export const getTotalProductCount = async () => {
   try {
     await connectToDB();
     const user = await getAuthenticUser();
-    const counts = await Product.count({ user: user?._id, track: false });
+    if (!user) return 0;
+
+    const counts = await Product.count({
+      user: new mongoose.Types.ObjectId(user?._id),
+      track: false,
+    });
     return counts;
   } catch (error: any) {
     console.log("Get total product count failed: " + error.message);
@@ -207,9 +213,14 @@ export const getAllProducts = async (limit: number, page: number) => {
     await connectToDB();
     const user = await getAuthenticUser();
 
+    if (!user) return [];
+
     const offset = limit * page;
 
-    const products = await Product.find({ user: user?._id, track: false })
+    const products = await Product.find({
+      user: new mongoose.Types.ObjectId(user?._id),
+      track: false,
+    })
       .limit(limit)
       .skip(offset)
       .sort({ _id: -1 });
@@ -224,7 +235,12 @@ export const getTotalTrackedProductCount = async () => {
   try {
     await connectToDB();
     const user = await getAuthenticUser();
-    const counts = await Product.count({ user: user?._id, track: true });
+    if (!user) return 0;
+
+    const counts = await Product.count({
+      user: new mongoose.Types.ObjectId(user?._id),
+      track: true,
+    });
     return counts;
   } catch (error: any) {
     console.log("Get total product count failed: " + error.message);
@@ -235,6 +251,7 @@ export const getAllTrackedProducts = async (limit: number, page: number) => {
   try {
     await connectToDB();
     const user = await getAuthenticUser();
+    if (!user) return [];
 
     const offset = limit * page;
 
@@ -289,4 +306,6 @@ export const deleteProduct = async (
 
   await Product.findByIdAndDelete(productId);
   revalidatePath("/");
+  revalidatePath("/tracked-product-list");
+  revalidatePath("/untracked-product-list");
 };

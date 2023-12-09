@@ -3,16 +3,26 @@
 import ProductCard from "@/components/ProductCard";
 import { getAllProducts, getTotalProductCount } from "@/lib/actions";
 import { Product } from "@/types";
+import { useClerk } from "@clerk/nextjs";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LoaderIcon } from "react-hot-toast";
 import InfiniteScroll from "react-infinite-scroll-component";
 
 const UntrackedProductListPage = () => {
+  const router = useRouter();
+  const { user } = useClerk();
   const [productCount, setProductCount] = useState<number>(0);
   const [products, setProducts] = useState<Product[] | []>([]);
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!user || !user.id) {
+      router.push("/sign-in");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     (async () => {

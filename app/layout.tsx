@@ -23,16 +23,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={spaceGrotesk.className}>
-        <ClerkProvider>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={spaceGrotesk.className}>
           <main className="max-w-10xl mx-auto">
             <ToastProvider />
             <Navbar />
             {children}
           </main>
-        </ClerkProvider>
-      </body>
-    </html>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

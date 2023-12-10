@@ -6,70 +6,74 @@ import {
   extractPrice,
   getRatingNumber,
 } from "../utils";
-import puppeteer, { Browser } from "puppeteer-core";
-import chromium from "@sparticuz/chromium-min";
+import axios from "axios";
+// import puppeteer, { Browser } from "puppeteer-core";
+// import chromium from "@sparticuz/chromium-min";
 
-const getBrowser = async () => {
-  return puppeteer.launch({
-    args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
-    defaultViewport: chromium.defaultViewport,
-    // Point to a Chromium tar file here 👇
-    executablePath: await chromium.executablePath(
-      `https://github.com/Sparticuz/chromium/releases/download/v116.0.0/chromium-v116.0.0-pack.tar`
-    ),
-    headless: chromium.headless,
-    ignoreHTTPSErrors: true,
-  });
-};
+// const getBrowser = async () => {
+//   return puppeteer.launch({
+//     args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
+//     defaultViewport: chromium.defaultViewport,
+//     // Point to a Chromium tar file here 👇
+//     executablePath: await chromium.executablePath(
+//       `https://github.com/Sparticuz/chromium/releases/download/v112.0.2/chromium-v112.0.2-pack.tar`
+//     ),
+//     headless: true,
+//     ignoreHTTPSErrors: true,
+//   });
+// };
 
 export async function scrapeAmazonProduct(url: string) {
   if (!url) return;
 
   // BrightData proxy configuration
-  // const username = String(process.env.BRIGHT_DATA_USERNAME);
-  // const password = String(process.env.BRIGHT_DATA_PASSWORD);
-  // const port = 22225;
-  // const session_id = (1000000 * Math.random()) | 0;
+  const username = String(process.env.BRIGHT_DATA_USERNAME);
+  const password = String(process.env.BRIGHT_DATA_PASSWORD);
+  const port = 22225;
+  const session_id = (1000000 * Math.random()) | 0;
 
-  // const options = {
-  //   auth: {
-  //     username: `${username}-session-${session_id}`,
-  //     password,
-  //   },
-  //   host: "brd.superproxy.io",
-  //   port,
-  //   rejectUnauthorized: false,
-  // };
+  const options = {
+    auth: {
+      username: `${username}-session-${session_id}`,
+      password,
+    },
+    host: "brd.superproxy.io",
+    port,
+    rejectUnauthorized: false,
+  };
 
   try {
     // Fetch the product page
-    // const response = await axios.get(url, options);
+    const response = await axios.get(url, options);
 
-    const browser: Browser = await getBrowser();
-    const page = await browser.newPage();
-    // Websites can check the User-Agent header to identify the browser. Set your User-Agent to mimic a real browser
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
-    );
-    await page.waitForTimeout(2000);
-    await page.goto(url, { waitUntil: "domcontentloaded" });
-    const content = await page.content();
-    await browser.close();
+    // const browser: Browser = await getBrowser();
+    // const page = await browser.newPage();
+    // // Websites can check the User-Agent header to identify the browser. Set your User-Agent to mimic a real browser
+    // await page.setUserAgent(
+    //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+    // );
+    // await page.waitForTimeout(2000);
+    // await page.goto(url, { waitUntil: "domcontentloaded" });
+    // const content = await page.content();
+    // await browser.close();
 
+    const content = response.data;
     const $ = cheerio.load(content);
 
     // Extract the product title
     const title = $("#productTitle").text().trim();
     const currentPrice = extractPrice(
-      $(".a-price.priceToPay span.a-offscreen"),
+      $("span.a-price.priceToPay"),
+      $("span.a-price.priceToPay span.a-offscreen"),
       $(".priceToPay span.a-price-whole"),
       $(".a.size.base.a-color-price"),
       $(".a-button-selected .a-color-base")
     );
 
     const originalPrice = extractPrice(
-      $("#priceblock_ourprice"),
+      $("span.a-price.a-text-price span.a-offscreen"),
       $(".a-price.a-text-price span.a-offscreen"),
+      $("#priceblock_ourprice"),
       $("#listPrice"),
       $("#priceblock_dealprice"),
       $(".a-size-base.a-color-price")

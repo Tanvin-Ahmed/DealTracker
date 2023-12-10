@@ -6,8 +6,9 @@ import {
   extractPrice,
   getRatingNumber,
 } from "../utils";
-import puppeteer from "puppeteer";
-import { Browser } from "puppeteer";
+// import puppeteer, { Browser } from "puppeteer";
+import puppeteer, { Browser } from "puppeteer-core";
+import chromium from "chrome-aws-lambda";
 
 export async function scrapeAmazonProduct(url: string) {
   if (!url) return;
@@ -31,7 +32,17 @@ export async function scrapeAmazonProduct(url: string) {
   try {
     // Fetch the product page
     // const response = await axios.get(url, options);
-    const browser: Browser = await puppeteer.launch({ headless: "new" });
+
+    let options = {
+      args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
+      headless: true,
+      ignoreHTTPSErrors: true,
+      // headless: "new",
+    };
+
+    const browser: Browser = await puppeteer.launch(options);
     const page = await browser.newPage();
     // Websites can check the User-Agent header to identify the browser. Set your User-Agent to mimic a real browser
     await page.setUserAgent(

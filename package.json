@@ -14,10 +14,11 @@
     "@phosphor-icons/react": "^2.0.15",
     "axios": "^1.5.1",
     "cheerio": "^1.0.0-rc.12",
+    "chrome-aws-lambda": "^6",
     "mongoose": "^7.6.2",
     "next": "13.5.4",
     "nodemailer": "^6.9.6",
-    "puppeteer": "^21.3.8",
+    "puppeteer-core": "^6",
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.4.1",
@@ -27,12 +28,14 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/nodemailer": "^6.4.11",
+    "@types/puppeteer-core": "^6",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10",
     "eslint": "^8",
     "eslint-config-next": "13.5.4",
     "postcss": "^8",
+    "puppeteer": "^21.6.0",
     "tailwindcss": "^3",
     "typescript": "^5"
   }

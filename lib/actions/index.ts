@@ -306,6 +306,4 @@ export const deleteProduct = async (
 
   await Product.findByIdAndDelete(productId);
   revalidatePath("/");
-  revalidatePath("/tracked-product-list");
-  revalidatePath("/untracked-product-list");
 };

@@ -6,9 +6,21 @@ import {
   extractPrice,
   getRatingNumber,
 } from "../utils";
-// import puppeteer, { Browser } from "puppeteer";
 import puppeteer, { Browser } from "puppeteer-core";
-import chromium from "chrome-aws-lambda";
+import chromium from "@sparticuz/chromium-min";
+
+const getBrowser = async () => {
+  return puppeteer.launch({
+    args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
+    defaultViewport: chromium.defaultViewport,
+    // Point to a Chromium tar file here 👇
+    executablePath: await chromium.executablePath(
+      `https://github.com/Sparticuz/chromium/releases/download/v116.0.0/chromium-v116.0.0-pack.tar`
+    ),
+    headless: chromium.headless,
+    ignoreHTTPSErrors: true,
+  });
+};
 
 export async function scrapeAmazonProduct(url: string) {
   if (!url) return;
@@ -33,16 +45,7 @@ export async function scrapeAmazonProduct(url: string) {
     // Fetch the product page
     // const response = await axios.get(url, options);
 
-    let options = {
-      args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: true,
-      ignoreHTTPSErrors: true,
-      // headless: "new",
-    };
-
-    const browser: Browser = await puppeteer.launch(options);
+    const browser: Browser = await getBrowser();
     const page = await browser.newPage();
     // Websites can check the User-Agent header to identify the browser. Set your User-Agent to mimic a real browser
     await page.setUserAgent(
